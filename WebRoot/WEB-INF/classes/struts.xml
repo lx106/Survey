@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+<struts>
+    <!-- 主题 -->
+    <constant name="struts.ui.theme" value="simple" />
+    <!-- 开发模式 -->
+    <constant name="struts.devMode" value="true" />
+    <!-- 允许静态方法访问 -->
+	<constant name="struts.ognl.allowStaticMethodAccess" value="true"/>
+    
+	<package name="surveyPkg" extends="struts-default,jfreechart-default" namespace="/">
+	   <interceptors>
+	         <!-- 注册登陆拦截器 -->
+	         <interceptor name="rightFilterInterceptor" class="com.lx.survey.struts2.interceptor.RightFilterInterceptor" />
+	         <!--  捕获url拦截器 -->
+	         <interceptor name="catchUrlIntercepter" class="com.lx.survey.struts2.interceptor.CatchUrlInterceptor" />
+	         <!-- 定义拦截器栈 -->
+	         <interceptor-stack name="surveyStack">
+	            <interceptor-ref name="catchUrlIntercepter" />
+	            <interceptor-ref name="rightFilterInterceptor" />
+	            <interceptor-ref name="defaultStack" >
+	               <param name="modelDriven.refreshModelBeforeResult">true</param>
+	               <!-- 文件大小 -->
+	               <param name="fileUpload.maximumSize">60000</param>
+	               <!-- 文件扩展名 -->
+	               <param name="fileUpload.allowedExtensions">.jpg,jpeg,.png,.bmp,.gif</param>
+	               <!-- 文件内容类型 -->
+	               <param name="fileUpload.allowedTypes">image/jpg,image/jpeg,image/png,image/png,image/gif,image/bmp</param>
+	            </interceptor-ref>
+	         </interceptor-stack>
+	   </interceptors>
+	   <!-- 定义默认栈 -->
+	   <default-interceptor-ref name="surveyStack" />
+	   
+	   <!-- 定义全局结果 -->
+	   <global-results>
+	       <result name="login">/index.jsp</result>
+	       <result name="designSurveyAction" type="redirectAction">
+	          <param name="namespace">/</param>
+	          <param name="actionName">SurveyAction_designSurvey</param>
+	          <param name="sid">${sid}</param>
+	       </result>
+	   </global-results>
+	   <!-- regAction -->
+	   <action name="RegAction_*" class="regAction" method="{1}">
+	      <result name="regPage">/reg.jsp</result>
+	      <result name="input">/reg.jsp</result>
+	      <result name="success">/index.jsp</result>
+	   </action>
+	    <!-- loginAction -->
+	   <action name="LoginAction_*" class="loginAction" method="{1}">
+	      <result name="loginPage">/index.jsp</result>
+	      <result name="input">/index.jsp</result>
+	      <result name="success">/index.jsp</result>
+	   </action>
+	   <!-- surveyAction -->
+	   <action name="SurveyAction_*" class="surveyAction" method="{1}">
+	      <result name="mySurveyListPage">/mySurveyList.jsp</result>
+	      <result name="designSurveyPage">/designSurvey.jsp</result>
+	      <result name="editSurveyPage">/editSurvey.jsp</result>
+	      <result name="addLogoPage">/addLogo.jsp</result>
+	      <result name="input">${inputPage}</result>
+	      <result name="findMySurveysAction" type="redirectAction">
+	         <param name="namespace">/</param>
+	         <param name="actionName">SurveyAction_mySurveys</param>
+	      </result>
+	      <result name="analyzeSurveyListPage">/analyzeSurveyList.jsp</result>
+	   </action>
+	   <!-- pageAction -->
+	   <action name="PageAction_*" class="pageAction" method="{1}">
+	      <result name="toAddPagePage">/editPage.jsp</result>
+	      <result name="editPagePage">/editPage.jsp</result>
+	   </action>
+	   <!-- questionAction -->
+	   <action name="QuestionAction_*" class="questionAction" method="{1}">
+	        <result name="selectQuestionTypePage">/selectQuestionType.jsp</result>
+	        <!-- 根据题型动态返回设计问题页面 -->
+			<result name="0">/nonMatrixWithOtherQuestionDesign.jsp</result>
+			<result name="1">/nonMatrixWithOtherQuestionDesign.jsp</result>
+			<result name="2">/nonMatrixWithOtherQuestionDesign.jsp</result>
+			<result name="3">/nonMatrixWithOtherQuestionDesign.jsp</result>
+		
+			<result name="4">/nonMatrixSelectQuestionDesign.jsp</result>
+			<result name="5">/nonMatrixTextQuestionDesign.jsp</result>
+		
+			<result name="6">/matrixNormalQuestionDesign.jsp</result>
+			<result name="7">/matrixNormalQuestionDesign.jsp</result>
+			<result name="8">/matrixSelectQuestionDesign.jsp</result>
+	   </action>
+	   <action name="MoveOrCopyPageAction_*" class="moveOrCopyPageAction" method="{1}">
+	       <result name="moveOrCopyPageListPage">/moveOrCopyPageList.jsp</result>
+	   </action>
+	   <action name="EngageSurveyAction_*" class="engageSurveyAction" method="{1}">
+	       <result name="engageSurveyListPage">/engageSurveyList.jsp</result>
+	       <result name="engageSurveyPage">/engageSurvey.jsp</result>
+	       <result name="engageSurveyAction" type="redirectAction">
+	           <param name="namespace">/</param>
+	           <param name="actionName">EngageSurveyAction_findAllAvailableSurveys</param>
+	       </result>
+	   </action>
+	   <!-- 图表输出action -->
+	   <action name="ChartOutputAction" class="chartOutputAction">
+	       <result name="success" type="chart">
+	          <param name="height">300</param>
+	          <param name="width">400</param>
+	       </result>
+	   </action>
+	   
+	   <!-- MatrixStatisticsAction -->
+	   <action name="MatrixStatisticsAction" class="matrixStatisticsAction">
+	       <result name="6">/matrixNormalStatistics.jsp</result>
+	       <result name="7">/matrixNormalStatistics.jsp</result>
+	       <result name="8">/matrixSelectStatistics.jsp</result>
+	   </action>
+	   
+	  <!-- 收集调查 -->
+		<action name="CollectionSurveyAction" class="collectionSurveyAction">
+			<result name="success" type="stream">
+				<param name="contentType">application/vnd.ms-excel</param>
+				<param name="inputName">is</param>
+				<param name="bufferSize">1024</param>
+				<param name="contentDisposition">attachment;filename="example.xls"</param>
+				<param name=""></param>
+			</result>
+		</action>
+		
+		<!-- 权限action -->
+	    <action name="RightAction_*" class="rightAction" method="{1}">
+	       <result name="rightListPage">/rightList.jsp</result>
+	       <result name="addRightPage">/editRight.jsp</result>
+	       <result name="editRightPage">/editRight.jsp</result>
+	       <result name="findAllRightAction" type="redirectAction">
+	          <param name="namespace">/</param>
+	          <param name="actionName">RightAction_findAllRights</param>
+	       </result>
+	    </action>
+	   
+	   <!-- 角色action -->
+	   <action name="RoleAction_*" class="roleAction" method="{1}">
+	      <result name="roleListPage">/roleList.jsp</result>
+	      <result name="addRolePage">/editRole.jsp</result>
+	      <result name="editRolePage">/editRole.jsp</result>
+	      <result name="findAllRolesAction" type="redirectAction">
+	         <param name="namespace">/</param>
+	         <param name="actionName">RoleAction_findAllRoles</param>
+	      </result>
+	   </action>
+	   
+	   <!-- 用户授权action -->
+	   <action name="UserAuthorizeAction_*" class="userAuthorizeAction" method="{1}">
+	     <result name="userAuthorizeListPage">/userAuthorizeList.jsp</result>
+	     <result name="editAuthorizePage">/userAuthorize.jsp</result>
+	     <result name="findAllUsersAction" type="redirectAction">
+	       <param name="namespace">/</param>
+	       <param name="actionName">UserAuthorizeAction_findAllUsers</param>
+	     </result>
+	   </action>
+	   
+	   <!-- 日志action -->
+	   <action name="LogAction_*" class="logAction" method="{1}">
+	      <result name="logListPage">/logList.jsp</result>
+	   </action>
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	</package>
+</struts>

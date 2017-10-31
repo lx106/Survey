@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC 
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.lx.survey.model">
+   <class name="Page" table="pages">
+      <id name="id" column="id" type="integer">
+         <generator class="identity" />
+      </id>
+      <property name="title" column="title" type="string" length="100" />
+      <property name="description" column="description" type="string" length="200" />
+      
+      <property name="orderno"  type="float" >
+         <column name="orderno" sql-type="decimal(10,5)" />
+      </property>
+      
+      <!-- 映射从Page 到 Survey 之间多对于关联 关系 -->
+      <many-to-one name="survey" class="Survey" column="surveyid"/>
+      
+      <!-- 映射从Page 到 Question 之间一对多关联关系 -->
+      <set name="questions" inverse="true" order-by="id">
+          <key column="pageid" />
+          <one-to-many class="Question"/>
+      </set>
+      
+   </class>
+</hibernate-mapping>    
+    

@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC 
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.lx.survey.model">
+
+   <class name="Survey" table="surveys">
+      <id name="id" column="id" type="integer">
+         <generator class="identity"/>
+      </id>
+      <property name="title" column="title" type="string" length="200" />
+      <property name="preText" column="pretext" type="string" length="50" />
+      <property name="nextText" column="nexttext" type="string" length="50" />
+      <property name="doneText" column="doneText" type="string" length="50" />
+      <property name="exitText" column="exittext" type="string" length="50" />
+      <property name="createTime" column="createtime" type="timestamp"/>
+      
+      <property name="logoPhotoPath" column="logophotopath" type="string" length="200"/>
+      <!--update="false" save() saveOrUpdate()方法不能修改 hql 语句可以修改 -->
+      <property name="closed" column="closed" type="boolean" update="false"/> 
+      <!-- 查询当前调查的最小最大 页面序号 -->
+      <property name="minOrderno" formula="(select min(p.orderno) from pages p where p.surveyid = id)" />
+      <property name="maxOrderno" formula="(select max(p.orderno) from pages p where p.surveyid = id)" />
+      
+      <!-- 映射从Survey 到 User 之间多对一关联关系 -->
+      <many-to-one name="user" class="User" column="userid" />
+      
+      <!-- 映射从Survey 到 Page 之间一对多关联关系 -->
+      <set name="pages" inverse="true" order-by="orderno">
+           <key column="surveyid" />
+           <one-to-many class="Page"/>
+      </set>
+   </class>
+
+</hibernate-mapping>

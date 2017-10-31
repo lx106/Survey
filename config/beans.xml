@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-3.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+	<!-- 分散配置 -->
+	<context:property-placeholder location="classpath:jdbc.properties"/>
+	<context:component-scan base-package="com.lx.survey.dao.impl,com.lx.survey.service.impl,com.lx.survey.listener,com.lx.survey.struts2.action" />
+	
+	
+	<!-- 配置(主库)数据源 -->
+	<bean id="dataSource-main" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbc.driverclass}" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		
+		<property name="maxPoolSize" value="${c3p0.pool.size.max}" />
+		<property name="minPoolSize" value="${c3p0.pool.size.min}" />
+		<property name="initialPoolSize" value="${c3p0.pool.size.ini}" />
+		<property name="acquireIncrement" value="${c3p0.pool.size.increment}" />
+	</bean>
+	
+	<!-- 配置从库数据源 -->
+	<bean id="dataSource-1" parent="dataSource-main">
+		<property name="jdbcUrl" value="jdbc:mysql://localhost:3306/survey_1" />
+	</bean>
+	
+	<!-- 数据源路由器 -->
+	<bean id="dataSourceRouter" class="com.lx.survey.datasource.SurveyDataSourceRouter">
+		<!-- 目标数据源集合 -->
+		<property name="targetDataSources">
+			<map>
+				<entry key="odd" value-ref="dataSource-main" />
+				<entry key="even" value-ref="dataSource-1" />
+			</map>
+		</property>
+		<!-- 默认数据源集合 -->
+		<property name="defaultTargetDataSource" ref="dataSource-main" />
+	</bean>
+	
+	<!-- 本地回话工厂bean(spring整合hibernate的核心入口) -->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSourceRouter" />
+		<property name="configLocation" value="classpath:hibernate.cfg.xml" />
+		<property name="mappingDirectoryLocations">
+			<list>
+				<value>classpath:com/lx/survey/model</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- hibnerate事务管理器,用来在service层面上实现事务管理,而且达到平台无关性 -->
+	<bean id="txManager" class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	
+	<!-- 事务通知 -->
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<!-- 写操作 -->
+			<tx:method name="save*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="update*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="delete*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="batch*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="new*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="clear*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="toggle*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="execute*" propagation="REQUIRED" isolation="DEFAULT"/>
+			<tx:method name="move*" propagation="REQUIRED" isolation="DEFAULT"/>
+			
+			<!-- 读操作 -->
+			<tx:method name="load*" propagation="REQUIRED" isolation="DEFAULT" read-only="true"/>
+			<tx:method name="get*" propagation="REQUIRED" isolation="DEFAULT" read-only="true"/>
+			<tx:method name="find*" propagation="REQUIRED" isolation="DEFAULT" read-only="true"/>
+			
+			<tx:method name="*" propagation="REQUIRED" isolation="DEFAULT"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 缓存管理器 -->
+	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+		<property name="cacheManager" ref="cacheManagerFactoryBean" />
+	</bean>
+
+	<!-- 缓存管理器工厂bean -->
+	<bean id="cacheManagerFactoryBean" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="classpath:ehcache.xml" />
+	</bean>
+
+	<!-- 自定义缓存key生成器 -->
+	<bean id="surveyKeyparkGenerator" class="com.lx.survey.cache.SurveyparkKeyGenerator" />
+	
+	<!-- 缓存通知 -->
+	<cache:advice id="cacheAdvice" cache-manager="cacheManager" key-generator="surveyKeyparkGenerator">
+		<cache:caching cache="surveyparkCache">
+			<cache:cacheable method="get*" />
+			<cache:cacheable method="load*" />
+			<cache:cacheable method="find*" />
+			
+			<cache:cache-evict method="save*" all-entries="true" />
+			<cache:cache-evict method="update*" all-entries="true"/>
+			<cache:cache-evict method="delete*" all-entries="true"/>
+			<cache:cache-evict method="clear*" all-entries="true"/>
+			<cache:cache-evict method="toggle*" all-entries="true"/>
+			<cache:cache-evict method="move*" all-entries="true"/>
+			<cache:cache-evict method="batch*" all-entries="true"/>
+			<cache:cache-evict method="execute*" all-entries="true"/>
+		</cache:caching>
+	</cache:advice>
+	
+	<!-- 日志记录仪 -->	
+	<bean id="logger" class="com.lx.survey.advice.Logger" />
+	
+	<!-- aop配置 -->	
+	<aop:config>
+		<!-- 事务切入点通知 -->
+		<aop:advisor advice-ref="txAdvice" pointcut="execution(* *..*Service.*(..))" order="2"/>
+		
+		<!-- 缓存切入点通知 -->
+		<aop:advisor advice-ref="cacheAdvice" pointcut="execution(* *..*Service.*(..))" order="0"/>
+		
+		<!-- Logger切面 -->
+		<aop:aspect id="loggerAspect" ref="logger" order="1">
+			<aop:around method="record" pointcut="(execution(* *..*Service.save*(..)) 
+											or execution(* *..*Service.update*(..)) 
+											or execution(* *..*Service.delete*(..)) 
+											or execution(* *..*Service.batch*(..)) 
+											or execution(* *..*Service.new*(..)) 
+											or execution(* *..*Service.move*(..)) 
+											or execution(* *..*Service.clear*(..)) 
+											or execution(* *..*Service.toggle*(..)))
+											and !bean(logService)
+											 "/>
+		</aop:aspect>
+	</aop:config>
+</beans>
